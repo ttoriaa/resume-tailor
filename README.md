@@ -47,3 +47,30 @@ Both scripts will:
 3. Load `.env` if present
 4. Start web app
 
+## Deploy on Render
+
+This repository includes `render.yaml` and `start_render.sh` for Render deployment.
+
+### Option A: Blueprint deploy (recommended)
+
+1. Open Render Dashboard and click **New +** -> **Blueprint**.
+2. Connect repository: `https://github.com/ttoriaa/resume-tailor`.
+3. Render will detect `render.yaml` automatically.
+4. Set secret env var in Render:
+	- `OPENAI_API_KEY` (optional but recommended for model mode)
+5. Click **Apply** to deploy.
+
+### Option B: Manual Web Service
+
+1. Create a new **Web Service** from this repository.
+2. Build command:
+	- `pip install -r requirements.txt`
+3. Start command:
+	- `bash ./start_render.sh`
+4. Add env vars as needed (`OPENAI_API_KEY`, `OPENAI_BASE_URL`, etc.).
+
+### Runtime behavior on Render
+
+- App binds to `0.0.0.0` and uses Render-provided `PORT` automatically.
+- Health check path is `/`.
+

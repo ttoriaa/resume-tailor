@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: resume-tailor
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash ./start_render.sh
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: RESUME_TAILOR_MODEL
+        value: gpt-4o-mini
+      - key: RESUME_JD_OCR_MODEL
+        value: gpt-4.1-mini
+      - key: OPENAI_API_KEY
+        sync: false
