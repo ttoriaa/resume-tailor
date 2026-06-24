@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
+import io
 import json
 import os
 import re
@@ -21,6 +23,8 @@ try:
     _generate_with_openai,
     _html_to_text,
     _normalize_payload,
+    _render_html,
+    _write_docx_with_preserved_layout,
     _write_html_with_preserved_layout,
   )
 except ModuleNotFoundError:
@@ -29,6 +33,8 @@ except ModuleNotFoundError:
     _generate_with_openai,
     _html_to_text,
     _normalize_payload,
+    _render_html,
+    _write_docx_with_preserved_layout,
     _write_html_with_preserved_layout,
   )
 
@@ -429,6 +435,16 @@ INDEX_HTML = """<!doctype html>
           </div>
 
           <div class="field">
+            <label id="resumePdfLabel" for="resumePdf">简历 PDF（可选，若提供则按 PDF 文本提取处理）</label>
+            <input id="resumePdf" type="file" accept="application/pdf,.pdf" />
+          </div>
+
+          <div class="field">
+            <label id="resumeDocxLabel" for="resumeDocx">简历 DOCX（可选，更适合保留模板结构）</label>
+            <input id="resumeDocx" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+          </div>
+
+          <div class="field">
             <label id="jobTitleLabel" for="jobTitle">目标岗位（可选）</label>
             <input id="jobTitle" type="text" placeholder="例如: AI Agent 产品经理" />
           </div>
@@ -463,7 +479,12 @@ INDEX_HTML = """<!doctype html>
             <input id="jdImage" type="file" accept="image/*" />
           </div>
 
-          <p id="ocrHint" class="hint">说明：如果只上传图片，后端会尝试基于 OPENAI_API_KEY 进行图片文字提取。未配置时会提示失败原因。</p>
+          <div class="field">
+            <label id="jdPdfLabel" for="jdPdf">JD PDF（可选，文本为空时提取 PDF 内容）</label>
+            <input id="jdPdf" type="file" accept="application/pdf,.pdf" />
+          </div>
+
+          <p id="ocrHint" class="hint">说明：如果上传 JD 图片，后端会尝试基于 OPENAI_API_KEY 做 OCR。若上传 JD PDF，则优先做 PDF 文本提取。若上传 resume DOCX，则会额外尝试输出一份保留原 DOCX 布局的结果文件。</p>
           <div id="tipsBox" class="tips">
             <strong id="tipsTitle">建议输入方式：</strong><br />
             <span id="tipsLine1">1. 优先粘贴完整 JD 文本，结果最稳定。</span><br />
@@ -524,6 +545,8 @@ INDEX_HTML = """<!doctype html>
         formIntro: "建议先用一份已经整理好的 HTML 简历作为输入。若当前未配置大模型 key，系统会使用本地规则模式生成结果。",
         resumeHtmlLabel: "简历 HTML 链接或本地路径",
         resumeHtmlPlaceholder: "例如: file:///C:/.../vickie_resume_profile.html 或 https://...",
+        resumePdfLabel: "简历 PDF（可选，若提供则按 PDF 文本提取处理）",
+        resumeDocxLabel: "简历 DOCX（可选，更适合保留模板结构）",
         jobTitleLabel: "目标岗位（可选）",
         jobTitlePlaceholder: "例如: AI Agent 产品经理",
         outputLanguageLabel: "输出语言",
@@ -534,10 +557,11 @@ INDEX_HTML = """<!doctype html>
         jdTextLabel: "JD 文本（优先）",
         jdTextPlaceholder: "直接粘贴岗位职责、要求、关键词等内容",
         jdImageLabel: "JD 图片（可选，文本为空时使用 OCR）",
-        ocrHint: "说明：如果只上传图片，后端会尝试基于 OPENAI_API_KEY 进行图片文字提取。未配置时会提示失败原因。",
+        jdPdfLabel: "JD PDF（可选，文本为空时提取 PDF 内容）",
+        ocrHint: "说明：如果上传 JD 图片，后端会尝试基于 OPENAI_API_KEY 做 OCR。若上传 JD PDF，则优先做 PDF 文本提取。若上传 resume DOCX，则会额外尝试输出一份保留原 DOCX 布局的结果文件。",
         tipsTitle: "建议输入方式：",
-        tipsLine1: "1. 优先粘贴完整 JD 文本，结果最稳定。",
-        tipsLine2: "2. 如果你只想快速试跑，可以先点“填充当前编辑页示例”。",
+        tipsLine1: "1. 优先粘贴完整 JD 文本，结果最稳定；JD PDF 适合作为第二选择。",
+        tipsLine2: "2. 简历若是 HTML，会尽量保留原版式；若是 PDF，会提取文本生成新的 HTML；若是 DOCX，会额外尝试输出保留布局的 DOCX。",
         tipsLine3: "3. 如果生成结果偏保守，通常说明当前运行在无 key 的规则模式。",
         generateBtn: "生成适配简历页面",
         fillDemoBtn: "填充当前编辑页示例",
@@ -577,6 +601,8 @@ INDEX_HTML = """<!doctype html>
         formIntro: "It is best to begin with a clean HTML resume as the input template. If no model key is configured, the app will fall back to local rule-based generation.",
         resumeHtmlLabel: "Resume HTML link or local path",
         resumeHtmlPlaceholder: "For example: file:///C:/.../vickie_resume_profile.html or https://...",
+        resumePdfLabel: "Resume PDF (optional, handled via PDF text extraction)",
+        resumeDocxLabel: "Resume DOCX (optional, better for keeping editable template structure)",
         jobTitleLabel: "Target role (optional)",
         jobTitlePlaceholder: "For example: AI Agent Product Manager",
         outputLanguageLabel: "Output language",
@@ -587,10 +613,11 @@ INDEX_HTML = """<!doctype html>
         jdTextLabel: "JD text (preferred)",
         jdTextPlaceholder: "Paste responsibilities, requirements, and keywords here",
         jdImageLabel: "JD image (optional, OCR is used when text is empty)",
-        ocrHint: "Note: if you upload an image only, the backend will try OCR with OPENAI_API_KEY. If the key is missing, the app will show the failure reason.",
+        jdPdfLabel: "JD PDF (optional, extracted when text is empty)",
+        ocrHint: "Note: if you upload a JD image, the backend will try OCR with OPENAI_API_KEY. If a JD PDF is uploaded, PDF text extraction is used first. If a resume DOCX is uploaded, the app also tries to output a preserved-layout DOCX result.",
         tipsTitle: "Recommended input flow:",
-        tipsLine1: "1. Paste the full JD text first for the most stable result.",
-        tipsLine2: "2. If you only want a quick trial, click the demo-fill button first.",
+        tipsLine1: "1. Paste the full JD text first for the most stable result; JD PDF is the second-best option.",
+        tipsLine2: "2. If the resume is HTML, the app tries to preserve layout; if it is PDF, the app rebuilds a new HTML page; if it is DOCX, the app also tries to output a preserved-layout DOCX file.",
         tipsLine3: "3. If the result feels conservative, the app is likely running in no-key fallback mode.",
         generateBtn: "Generate tailored resume page",
         fillDemoBtn: "Fill current demo example",
@@ -600,6 +627,7 @@ INDEX_HTML = """<!doctype html>
         statusDone: "Done. You can open the new page to preview it.",
         statusFillDemo: "Demo content inserted. You can generate immediately.",
         fileUrlLabel: "Local file URL",
+        docxUrlLabel: "DOCX output",
         absPathLabel: "Absolute path",
         relPathLabel: "Relative path",
         summaryJsonLabel: "Summary JSON",
@@ -622,8 +650,9 @@ INDEX_HTML = """<!doctype html>
         "eyebrowText", "heroTitle", "heroLead", "heroPoint1", "heroPoint2", "heroPoint3", "heroPoint4",
         "stepsTitle", "step1", "step2", "step3", "scenarioTitle", "scenarioIntro", "card1Title", "card1Body",
         "card2Title", "card2Body", "card3Title", "card3Body", "formTitle", "formIntro", "resumeHtmlLabel",
+        "resumePdfLabel", "resumeDocxLabel",
         "jobTitleLabel", "outputLanguageLabel", "outputLanguageOptionZh", "outputLanguageOptionEn", "outputLanguageOptionBi",
-        "rewriteStrengthLabel", "jdTextLabel", "jdImageLabel", "ocrHint", "tipsTitle", "tipsLine1", "tipsLine2",
+        "rewriteStrengthLabel", "jdTextLabel", "jdImageLabel", "jdPdfLabel", "ocrHint", "tipsTitle", "tipsLine1", "tipsLine2",
         "tipsLine3", "generateBtn", "fillDemoBtn", "resultTitle", "footerNote"
       ];
 
@@ -662,6 +691,9 @@ INDEX_HTML = """<!doctype html>
       if (data.output_html_file_url) {
         lines.push([t("fileUrlLabel"), data.output_html_file_url]);
       }
+      if (data.output_docx_file_url) {
+        lines.push([t("docxUrlLabel"), data.output_docx_file_url]);
+      }
       if (data.output_html_abs_path) {
         lines.push([t("absPathLabel"), data.output_html_abs_path]);
       }
@@ -694,13 +726,22 @@ INDEX_HTML = """<!doctype html>
       setStatus(t("statusGenerating"));
 
       try {
+        const resumePdfFile = document.getElementById("resumePdf").files[0];
+        const resumeDocxFile = document.getElementById("resumeDocx").files[0];
         const jdImageFile = document.getElementById("jdImage").files[0];
+        const jdPdfFile = document.getElementById("jdPdf").files[0];
+        const resumePdfDataUrl = await fileToDataUrl(resumePdfFile);
+        const resumeDocxDataUrl = await fileToDataUrl(resumeDocxFile);
         const jdImageDataUrl = await fileToDataUrl(jdImageFile);
+        const jdPdfDataUrl = await fileToDataUrl(jdPdfFile);
 
         const body = {
           resume_html_url: document.getElementById("resumeHtmlUrl").value.trim(),
+          resume_pdf_data_url: resumePdfDataUrl,
+          resume_docx_data_url: resumeDocxDataUrl,
           jd_text: document.getElementById("jdText").value.trim(),
           jd_image_data_url: jdImageDataUrl,
+          jd_pdf_data_url: jdPdfDataUrl,
           job_title: document.getElementById("jobTitle").value.trim(),
           language: document.getElementById("language").value,
           version: document.getElementById("version").value,
@@ -793,6 +834,187 @@ def _resolve_resume_html_source(source: str) -> tuple[str, str]:
 
     text = path.read_text(encoding="utf-8")
     return text, path.as_uri()
+
+
+def _decode_data_url(data_url: str, expected_prefix: str) -> bytes:
+    data = _clean(data_url)
+    if not data:
+        return b""
+    if not data.lower().startswith(expected_prefix.lower()):
+        raise ValueError(f"Invalid uploaded payload, expected prefix: {expected_prefix}")
+    try:
+        _, encoded = data.split(",", 1)
+        return base64.b64decode(encoded)
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("Failed to decode uploaded file") from exc
+
+
+def _extract_text_from_pdf_bytes(raw: bytes, label: str) -> str:
+    if not raw:
+        return ""
+    try:
+        from pypdf import PdfReader  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError("pypdf is required for PDF support. Install with: pip install pypdf") from exc
+
+    try:
+        reader = PdfReader(io.BytesIO(raw))
+        texts: list[str] = []
+        for page in reader.pages:
+            texts.append(_clean(page.extract_text()))
+        text = "\n".join(item for item in texts if item).strip()
+        if not text:
+            raise ValueError(f"No extractable text found in PDF: {label}")
+        return text
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"Failed to extract text from PDF: {label}. {exc}") from exc
+
+
+    def _extract_text_from_docx_bytes(raw: bytes, label: str) -> str:
+      if not raw:
+        return ""
+      try:
+        from docx import Document  # type: ignore
+      except Exception as exc:  # noqa: BLE001
+        raise RuntimeError("python-docx is required for DOCX support. Install with: pip install python-docx") from exc
+
+      try:
+        doc = Document(io.BytesIO(raw))
+        texts = [_clean(paragraph.text) for paragraph in doc.paragraphs]
+        text = "\n".join(item for item in texts if item).strip()
+        if not text:
+          raise ValueError(f"No extractable text found in DOCX: {label}")
+        return text
+      except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"Failed to extract text from DOCX: {label}. {exc}") from exc
+
+
+def _resolve_resume_input(source: str, resume_pdf_data_url: str, resume_docx_data_url: str) -> dict[str, str]:
+    uploaded_pdf = _decode_data_url(resume_pdf_data_url, "data:application/pdf") if _clean(resume_pdf_data_url) else b""
+    if uploaded_pdf:
+        resume_text = _extract_text_from_pdf_bytes(uploaded_pdf, "uploaded resume PDF")
+        return {
+            "kind": "pdf",
+            "resume_text": resume_text,
+            "source_label": "uploaded-resume-pdf",
+            "template_html": "",
+            "template_docx_path": "",
+        }
+
+    uploaded_docx = _decode_data_url(
+        resume_docx_data_url,
+        "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ) if _clean(resume_docx_data_url) else b""
+    if uploaded_docx:
+        resume_text = _extract_text_from_docx_bytes(uploaded_docx, "uploaded resume DOCX")
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".docx", delete=False) as tmp_docx:
+            tmp_docx.write(uploaded_docx)
+            temp_docx_path = tmp_docx.name
+        return {
+            "kind": "docx",
+            "resume_text": resume_text,
+            "source_label": "uploaded-resume-docx",
+            "template_html": "",
+            "template_docx_path": temp_docx_path,
+        }
+
+    src = _clean(source)
+    if not src:
+        raise ValueError("请提供简历 HTML 链接/路径，或上传 PDF 简历")
+
+    if re.match(r"^https?://", src, flags=re.IGNORECASE):
+        resp = requests.get(src, timeout=30)
+        resp.raise_for_status()
+        ctype = resp.headers.get("Content-Type", "")
+        if "application/pdf" in ctype or src.lower().endswith(".pdf"):
+            resume_text = _extract_text_from_pdf_bytes(resp.content, src)
+            return {
+                "kind": "pdf",
+                "resume_text": resume_text,
+                "source_label": src,
+                "template_html": "",
+            "template_docx_path": "",
+            }
+        if "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in ctype or src.lower().endswith(".docx"):
+          resume_text = _extract_text_from_docx_bytes(resp.content, src)
+          with tempfile.NamedTemporaryFile(mode="wb", suffix=".docx", delete=False) as tmp_docx:
+            tmp_docx.write(resp.content)
+            temp_docx_path = tmp_docx.name
+          return {
+            "kind": "docx",
+            "resume_text": resume_text,
+            "source_label": src,
+            "template_html": "",
+            "template_docx_path": temp_docx_path,
+          }
+        html_text = resp.text
+        if "text/html" not in ctype and "application/xhtml+xml" not in ctype and "<html" not in html_text.lower():
+            raise ValueError("提供的链接既不是 HTML，也不是可解析的 PDF")
+        return {
+            "kind": "html",
+            "resume_text": _html_to_text(html_text),
+            "source_label": src,
+            "template_html": html_text,
+          "template_docx_path": "",
+        }
+
+    if src.lower().startswith("file://"):
+        parsed = urlparse(src)
+        file_path = unquote(parsed.path or "")
+        if re.match(r"^/[A-Za-z]:", file_path):
+            file_path = file_path[1:]
+        path = Path(file_path)
+    else:
+        path = Path(src)
+        if not path.is_absolute():
+            path = (ROOT / path).resolve()
+
+    if not path.exists():
+        raise ValueError(f"简历文件不存在: {path}")
+
+    if path.suffix.lower() == ".pdf":
+        resume_text = _extract_text_from_pdf_bytes(path.read_bytes(), str(path))
+        return {
+            "kind": "pdf",
+            "resume_text": resume_text,
+            "source_label": path.as_uri(),
+            "template_html": "",
+        "template_docx_path": "",
+        }
+
+    if path.suffix.lower() == ".docx":
+      resume_text = _extract_text_from_docx_bytes(path.read_bytes(), str(path))
+      return {
+        "kind": "docx",
+        "resume_text": resume_text,
+        "source_label": path.as_uri(),
+        "template_html": "",
+        "template_docx_path": str(path),
+      }
+
+    html_text = path.read_text(encoding="utf-8")
+    return {
+        "kind": "html",
+        "resume_text": _html_to_text(html_text),
+        "source_label": path.as_uri(),
+        "template_html": html_text,
+      "template_docx_path": "",
+    }
+
+
+def _resolve_jd_text(jd_text: str, jd_image_data_url: str, jd_pdf_data_url: str) -> str:
+    final_jd_text = _clean(jd_text)
+    if final_jd_text:
+        return final_jd_text
+
+    uploaded_pdf = _decode_data_url(jd_pdf_data_url, "data:application/pdf") if _clean(jd_pdf_data_url) else b""
+    if uploaded_pdf:
+        return _extract_text_from_pdf_bytes(uploaded_pdf, "uploaded JD PDF")
+
+    if _clean(jd_image_data_url):
+        return _extract_jd_text_from_image(jd_image_data_url)
+
+    return ""
 
 
 def _extract_jd_text_from_image(data_url: str) -> str:
@@ -907,22 +1129,23 @@ def _inject_summary_block(html_text: str, summary_block: str) -> str:
 
 def _run_tailor(
     resume_html_url: str,
+    resume_pdf_data_url: str,
+    resume_docx_data_url: str,
     jd_text: str,
     jd_image_data_url: str,
+    jd_pdf_data_url: str,
     job_title: str,
     language: str,
     version: str,
 ) -> dict[str, Any]:
-    html_text, source_label = _resolve_resume_html_source(resume_html_url)
-
-    final_jd_text = _clean(jd_text)
-    if not final_jd_text and _clean(jd_image_data_url):
-        final_jd_text = _extract_jd_text_from_image(jd_image_data_url)
+    resume_input = _resolve_resume_input(resume_html_url, resume_pdf_data_url, resume_docx_data_url)
+    source_label = resume_input["source_label"]
+    final_jd_text = _resolve_jd_text(jd_text, jd_image_data_url, jd_pdf_data_url)
 
     if not final_jd_text:
-        raise ValueError("请提供 JD 文本，或上传可识别的 JD 图片")
+        raise ValueError("请提供 JD 文本，或上传可识别的 JD 图片 / PDF")
 
-    resume_text = _html_to_text(html_text)
+    resume_text = resume_input["resume_text"]
     versions = [version] if version in {"conservative", "balanced", "aggressive"} else ["aggressive"]
 
     raw_payload = _generate_with_openai(
@@ -942,31 +1165,49 @@ def _run_tailor(
 
     safe_job = _safe_name(job_title or "job")
     output_name = f"resume_tailored_{safe_job}_{versions[0]}_{stamp}.html"
+    output_html_path = out_dir / output_name
+    output_docx_path = out_dir / f"resume_tailored_{safe_job}_{versions[0]}_{stamp}.docx"
+    docx_output_url = ""
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False, encoding="utf-8") as tmp:
-      tmp.write(html_text)
-      template_path = Path(tmp.name)
+    if resume_input["kind"] == "html":
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False, encoding="utf-8") as tmp:
+            tmp.write(resume_input["template_html"])
+            template_path = Path(tmp.name)
 
-    try:
-        output_html_path = out_dir / output_name
-        ok, message = _write_html_with_preserved_layout(
-            template_html_path=template_path,
-            output_html_path=output_html_path,
-            payload=payload,
-            version=versions[0],
-        )
-        if not ok:
-            raise ValueError(message)
-
-        rendered_html = output_html_path.read_text(encoding="utf-8")
-        summary_block = _build_summary_block(payload, job_title, versions[0], final_jd_text, source_label)
-        rendered_html = _inject_summary_block(rendered_html, summary_block)
-        output_html_path.write_text(rendered_html, encoding="utf-8")
-    finally:
         try:
-            template_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+            ok, message = _write_html_with_preserved_layout(
+                template_html_path=template_path,
+                output_html_path=output_html_path,
+                payload=payload,
+                version=versions[0],
+            )
+            if not ok:
+                raise ValueError(message)
+        finally:
+            try:
+                template_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+    else:
+        rendered_html = _render_html(payload, versions, job_title)
+        output_html_path.write_text(rendered_html + "\n", encoding="utf-8")
+
+    if resume_input["kind"] == "docx" and resume_input.get("template_docx_path"):
+      ok, message = _write_docx_with_preserved_layout(
+        template_docx=Path(resume_input["template_docx_path"]),
+        output_docx=output_docx_path,
+        payload=payload,
+        version=versions[0],
+      )
+      if ok:
+        docx_output_url = output_docx_path.resolve().as_uri()
+      else:
+        raise ValueError(message)
+
+    rendered_html = output_html_path.read_text(encoding="utf-8")
+    summary_block = _build_summary_block(payload, job_title, versions[0], final_jd_text, source_label)
+    rendered_html = _inject_summary_block(rendered_html, summary_block)
+    output_html_path.write_text(rendered_html, encoding="utf-8")
 
     summary = {
         "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
@@ -980,16 +1221,26 @@ def _run_tailor(
         "output_html": str(output_html_path),
     }
 
+    summary["output_docx"] = str(output_docx_path) if docx_output_url else ""
+
     summary_path = output_html_path.with_suffix(".summary.json")
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    if resume_input.get("kind") == "docx" and resume_input.get("source_label") == "uploaded-resume-docx":
+      try:
+        Path(resume_input["template_docx_path"]).unlink(missing_ok=True)
+      except Exception:
+        pass
 
     return {
         "ok": True,
         "output_html_abs_path": str(output_html_path.resolve()),
         "output_html_rel_path": str(output_html_path.relative_to(ROOT)).replace("\\", "/"),
         "output_html_file_url": output_html_path.resolve().as_uri(),
+      "output_docx_file_url": docx_output_url,
         "summary_json_path": str(summary_path.resolve().as_uri()),
         "provider": payload.get("meta", {}).get("provider", "unknown"),
+        "resume_source_kind": resume_input["kind"],
     }
 
 
@@ -1021,8 +1272,11 @@ class ResumeTailorHandler(BaseHTTPRequestHandler):
             data = _read_json_body(self)
             result = _run_tailor(
                 resume_html_url=_clean(data.get("resume_html_url")),
+              resume_pdf_data_url=_clean(data.get("resume_pdf_data_url")),
+              resume_docx_data_url=_clean(data.get("resume_docx_data_url")),
                 jd_text=_clean(data.get("jd_text")),
                 jd_image_data_url=_clean(data.get("jd_image_data_url")),
+              jd_pdf_data_url=_clean(data.get("jd_pdf_data_url")),
                 job_title=_clean(data.get("job_title")),
                 language=_clean(data.get("language")) or "zh",
                 version=_clean(data.get("version")) or "aggressive",
