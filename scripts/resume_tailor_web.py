@@ -45,11 +45,13 @@ INDEX_HTML = """<!doctype html>
     :root {
       --bg: #f5efe4;
       --panel: #fffdfa;
+      --panel-strong: #fff8f1;
       --ink: #1d2f38;
       --muted: #5a6b74;
       --line: rgba(29, 47, 56, 0.2);
       --accent: #0f6a63;
       --accent-2: #a4492e;
+      --accent-3: #223e63;
       --radius: 16px;
       --shadow: 0 14px 34px rgba(21, 35, 44, 0.14);
     }
@@ -69,7 +71,7 @@ INDEX_HTML = """<!doctype html>
     }
 
     .wrap {
-      max-width: 980px;
+      max-width: 1120px;
       margin: 0 auto;
       display: grid;
       gap: 14px;
@@ -77,14 +79,112 @@ INDEX_HTML = """<!doctype html>
 
     .hero {
       border-radius: 24px;
-      padding: 22px;
+      padding: 24px;
       color: #ecf5f3;
       background: linear-gradient(130deg, #114f4c 0%, #253a58 54%, #3b3148 100%);
       box-shadow: 0 18px 40px rgba(14, 33, 47, 0.24);
+      display: grid;
+      grid-template-columns: 1.25fr 0.95fr;
+      gap: 18px;
     }
 
-    .hero h1 { margin: 0; font-size: clamp(24px, 4vw, 38px); }
-    .hero p { margin: 8px 0 0; line-height: 1.6; color: rgba(236, 245, 243, 0.95); }
+    .hero h1 { margin: 0; font-size: clamp(28px, 4vw, 46px); line-height: 1.05; }
+    .hero p { margin: 10px 0 0; line-height: 1.65; color: rgba(236, 245, 243, 0.95); }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero-copy {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero-lead {
+      max-width: 640px;
+      font-size: 16px;
+    }
+
+    .hero-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .hero-points span {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 13px;
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .lang-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      line-height: 1;
+      color: rgba(236, 245, 243, 0.92);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .lang-btn.active {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+
+    .hero-side {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 18px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .hero-side h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .hero-side ol {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 10px;
+      line-height: 1.55;
+      color: rgba(236, 245, 243, 0.96);
+    }
 
     .panel {
       background: rgba(255, 253, 250, 0.9);
@@ -93,6 +193,44 @@ INDEX_HTML = """<!doctype html>
       padding: 16px;
       box-shadow: var(--shadow);
       backdrop-filter: blur(2px);
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .panel-intro {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .info-card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .info-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--accent-3);
+      font-size: 15px;
+    }
+
+    .info-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
     }
 
     .grid {
@@ -173,6 +311,17 @@ INDEX_HTML = """<!doctype html>
       line-height: 1.45;
     }
 
+    .tips {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(15, 106, 99, 0.06);
+      border: 1px solid rgba(15, 106, 99, 0.12);
+      color: #36515b;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
     .result {
       display: none;
       margin-top: 6px;
@@ -205,7 +354,16 @@ INDEX_HTML = """<!doctype html>
       word-break: break-all;
     }
 
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 2px 4px 0;
+    }
+
     @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
       .grid { grid-template-columns: 1fr; }
       textarea { min-height: 150px; }
     }
@@ -214,34 +372,78 @@ INDEX_HTML = """<!doctype html>
 <body>
   <main class="wrap">
     <section class="hero">
-      <h1>Resume Tailor Studio</h1>
-      <p>输入现有简历 HTML 链接 + 新 JD（文本或图片），自动生成一份适配后的新简历 HTML 页面。保持原页面结构，只更新经历要点文本。</p>
+      <div class="hero-copy">
+        <div class="hero-top">
+          <div class="eyebrow" id="eyebrowText">Resume Tailor Studio</div>
+          <div class="lang-switch" aria-label="Language switcher">
+            <button id="langZhBtn" class="lang-btn active" type="button">中文</button>
+            <button id="langEnBtn" class="lang-btn" type="button">EN</button>
+          </div>
+        </div>
+        <h1 id="heroTitle">把一份已有简历，快速改成更贴近目标 JD 的版本</h1>
+        <p id="heroLead" class="hero-lead">输入现有简历 HTML 链接，再贴入新的岗位描述，系统会分析 JD 重点、保留原页面结构，并生成一份更适配岗位方向的新简历页面。</p>
+        <div class="hero-points">
+          <span id="heroPoint1">保留原版式</span>
+          <span id="heroPoint2">支持 JD 文本 / 图片</span>
+          <span id="heroPoint3">输出新 HTML 页面</span>
+          <span id="heroPoint4">可切换 conservative / balanced / aggressive</span>
+        </div>
+      </div>
+      <aside class="hero-side">
+        <h2 id="stepsTitle">三步完成</h2>
+        <ol>
+          <li id="step1">提供现有简历 HTML 链接，作为原始模板。</li>
+          <li id="step2">粘贴目标 JD，或上传岗位截图做 OCR 提取。</li>
+          <li id="step3">选择改写力度，生成新的适配简历页面并直接打开预览。</li>
+        </ol>
+      </aside>
     </section>
 
     <section class="panel">
+      <h2 id="scenarioTitle">它适合什么场景</h2>
+      <p id="scenarioIntro" class="panel-intro">如果你已经有一版网页简历，不想重做视觉样式，只想围绕某个岗位快速改写内容、提炼匹配重点，这个工具就是为这个流程准备的。</p>
+      <div class="info-grid">
+        <article class="info-card">
+          <strong id="card1Title">保留版式</strong>
+          <p id="card1Body">不推倒重来，优先沿用你已有的 HTML 结构和视觉表达，减少重复排版成本。</p>
+        </article>
+        <article class="info-card">
+          <strong id="card2Title">突出匹配</strong>
+          <p id="card2Body">围绕 JD 里的职责、关键词和能力要求，输出更聚焦的经历措辞和摘要说明。</p>
+        </article>
+        <article class="info-card">
+          <strong id="card3Title">先试再精修</strong>
+          <p id="card3Body">适合先生成一个可讨论版本，再继续手工优化成最终投递稿。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 id="formTitle">开始生成</h2>
+      <p id="formIntro" class="panel-intro">建议先用一份已经整理好的 HTML 简历作为输入。若当前未配置大模型 key，系统会使用本地规则模式生成结果。</p>
       <div class="grid">
         <div>
           <div class="field">
-            <label for="resumeHtmlUrl">简历 HTML 链接或本地路径</label>
+            <label id="resumeHtmlLabel" for="resumeHtmlUrl">简历 HTML 链接或本地路径</label>
             <input id="resumeHtmlUrl" type="text" placeholder="例如: file:///C:/.../vickie_resume_profile.html 或 https://..." />
           </div>
 
           <div class="field">
-            <label for="jobTitle">目标岗位（可选）</label>
+            <label id="jobTitleLabel" for="jobTitle">目标岗位（可选）</label>
             <input id="jobTitle" type="text" placeholder="例如: AI Agent 产品经理" />
           </div>
 
           <div class="field">
-            <label for="language">输出语言</label>
+            <label id="outputLanguageLabel" for="language">输出语言</label>
             <select id="language">
-              <option value="zh" selected>中文</option>
-              <option value="en">English</option>
-              <option value="bilingual">中英双语</option>
+              <option id="outputLanguageOptionZh" value="zh" selected>中文</option>
+              <option id="outputLanguageOptionEn" value="en">English</option>
+              <option id="outputLanguageOptionBi" value="bilingual">中英双语</option>
             </select>
           </div>
 
           <div class="field">
-            <label for="version">改写力度</label>
+            <label id="rewriteStrengthLabel" for="version">改写力度</label>
             <select id="version">
               <option value="conservative">conservative</option>
               <option value="balanced">balanced</option>
@@ -252,16 +454,22 @@ INDEX_HTML = """<!doctype html>
 
         <div>
           <div class="field">
-            <label for="jdText">JD 文本（优先）</label>
+            <label id="jdTextLabel" for="jdText">JD 文本（优先）</label>
             <textarea id="jdText" placeholder="直接粘贴岗位职责、要求、关键词等内容"></textarea>
           </div>
 
           <div class="field">
-            <label for="jdImage">JD 图片（可选，文本为空时使用 OCR）</label>
+            <label id="jdImageLabel" for="jdImage">JD 图片（可选，文本为空时使用 OCR）</label>
             <input id="jdImage" type="file" accept="image/*" />
           </div>
 
-          <p class="hint">说明：如果只上传图片，后端会尝试基于 OPENAI_API_KEY 进行图片文字提取。未配置时会提示失败原因。</p>
+          <p id="ocrHint" class="hint">说明：如果只上传图片，后端会尝试基于 OPENAI_API_KEY 进行图片文字提取。未配置时会提示失败原因。</p>
+          <div id="tipsBox" class="tips">
+            <strong id="tipsTitle">建议输入方式：</strong><br />
+            <span id="tipsLine1">1. 优先粘贴完整 JD 文本，结果最稳定。</span><br />
+            <span id="tipsLine2">2. 如果你只想快速试跑，可以先点“填充当前编辑页示例”。</span><br />
+            <span id="tipsLine3">3. 如果生成结果偏保守，通常说明当前运行在无 key 的规则模式。</span>
+          </div>
         </div>
       </div>
 
@@ -273,18 +481,161 @@ INDEX_HTML = """<!doctype html>
       <p id="status" class="status"></p>
 
       <section id="resultBox" class="result">
-        <strong>生成结果</strong>
+        <strong id="resultTitle">生成结果</strong>
         <div class="link-row" id="resultLinks"></div>
       </section>
     </section>
+
+    <p id="footerNote" class="footer-note">生成结果会写入服务端本地输出目录，并返回新页面链接与摘要 JSON，便于继续迭代。</p>
   </main>
 
   <script>
     const generateBtn = document.getElementById("generateBtn");
     const fillDemoBtn = document.getElementById("fillDemoBtn");
+    const langZhBtn = document.getElementById("langZhBtn");
+    const langEnBtn = document.getElementById("langEnBtn");
     const statusEl = document.getElementById("status");
     const resultBox = document.getElementById("resultBox");
     const resultLinks = document.getElementById("resultLinks");
+    let currentUiLang = "zh";
+
+    const translations = {
+      zh: {
+        eyebrowText: "Resume Tailor Studio",
+        heroTitle: "把一份已有简历，快速改成更贴近目标 JD 的版本",
+        heroLead: "输入现有简历 HTML 链接，再贴入新的岗位描述，系统会分析 JD 重点、保留原页面结构，并生成一份更适配岗位方向的新简历页面。",
+        heroPoint1: "保留原版式",
+        heroPoint2: "支持 JD 文本 / 图片",
+        heroPoint3: "输出新 HTML 页面",
+        heroPoint4: "可切换 conservative / balanced / aggressive",
+        stepsTitle: "三步完成",
+        step1: "提供现有简历 HTML 链接，作为原始模板。",
+        step2: "粘贴目标 JD，或上传岗位截图做 OCR 提取。",
+        step3: "选择改写力度，生成新的适配简历页面并直接打开预览。",
+        scenarioTitle: "它适合什么场景",
+        scenarioIntro: "如果你已经有一版网页简历，不想重做视觉样式，只想围绕某个岗位快速改写内容、提炼匹配重点，这个工具就是为这个流程准备的。",
+        card1Title: "保留版式",
+        card1Body: "不推倒重来，优先沿用你已有的 HTML 结构和视觉表达，减少重复排版成本。",
+        card2Title: "突出匹配",
+        card2Body: "围绕 JD 里的职责、关键词和能力要求，输出更聚焦的经历措辞和摘要说明。",
+        card3Title: "先试再精修",
+        card3Body: "适合先生成一个可讨论版本，再继续手工优化成最终投递稿。",
+        formTitle: "开始生成",
+        formIntro: "建议先用一份已经整理好的 HTML 简历作为输入。若当前未配置大模型 key，系统会使用本地规则模式生成结果。",
+        resumeHtmlLabel: "简历 HTML 链接或本地路径",
+        resumeHtmlPlaceholder: "例如: file:///C:/.../vickie_resume_profile.html 或 https://...",
+        jobTitleLabel: "目标岗位（可选）",
+        jobTitlePlaceholder: "例如: AI Agent 产品经理",
+        outputLanguageLabel: "输出语言",
+        outputLanguageOptionZh: "中文",
+        outputLanguageOptionEn: "English",
+        outputLanguageOptionBi: "中英双语",
+        rewriteStrengthLabel: "改写力度",
+        jdTextLabel: "JD 文本（优先）",
+        jdTextPlaceholder: "直接粘贴岗位职责、要求、关键词等内容",
+        jdImageLabel: "JD 图片（可选，文本为空时使用 OCR）",
+        ocrHint: "说明：如果只上传图片，后端会尝试基于 OPENAI_API_KEY 进行图片文字提取。未配置时会提示失败原因。",
+        tipsTitle: "建议输入方式：",
+        tipsLine1: "1. 优先粘贴完整 JD 文本，结果最稳定。",
+        tipsLine2: "2. 如果你只想快速试跑，可以先点“填充当前编辑页示例”。",
+        tipsLine3: "3. 如果生成结果偏保守，通常说明当前运行在无 key 的规则模式。",
+        generateBtn: "生成适配简历页面",
+        fillDemoBtn: "填充当前编辑页示例",
+        resultTitle: "生成结果",
+        footerNote: "生成结果会写入服务端本地输出目录，并返回新页面链接与摘要 JSON，便于继续迭代。",
+        statusGenerating: "正在生成，请稍候...",
+        statusDone: "生成完成。你可以直接打开新页面预览。",
+        statusFillDemo: "示例已填充，可直接点击生成。",
+        fileUrlLabel: "本地文件 URL",
+        absPathLabel: "文件路径",
+        relPathLabel: "相对路径",
+        summaryJsonLabel: "摘要 JSON",
+        readImageError: "读取图片失败",
+        genericError: "生成失败",
+      },
+      en: {
+        eyebrowText: "Resume Tailor Studio",
+        heroTitle: "Turn an existing resume into a version that matches a target JD faster",
+        heroLead: "Provide an existing resume HTML link and paste a new job description. The system will analyze the JD, preserve your original layout, and generate a more targeted resume page.",
+        heroPoint1: "Keep original layout",
+        heroPoint2: "Supports JD text / image",
+        heroPoint3: "Outputs a new HTML page",
+        heroPoint4: "Switch between conservative / balanced / aggressive",
+        stepsTitle: "Complete in 3 steps",
+        step1: "Provide an existing resume HTML link as the source template.",
+        step2: "Paste the target JD or upload a job screenshot for OCR extraction.",
+        step3: "Choose rewrite intensity and generate a tailored resume page ready for preview.",
+        scenarioTitle: "When this is useful",
+        scenarioIntro: "If you already have a web-based resume and do not want to redesign the visual layer, this tool helps you quickly rewrite the content around a specific role and surface stronger matching signals.",
+        card1Title: "Preserve layout",
+        card1Body: "Reuse your existing HTML structure and visual design instead of rebuilding the resume from scratch.",
+        card2Title: "Highlight fit",
+        card2Body: "Rewrite experience around responsibilities, keywords, and capability signals found in the JD.",
+        card3Title: "Draft first, refine later",
+        card3Body: "Generate a discussion-ready version first, then continue polishing it into a final application draft.",
+        formTitle: "Start generating",
+        formIntro: "It is best to begin with a clean HTML resume as the input template. If no model key is configured, the app will fall back to local rule-based generation.",
+        resumeHtmlLabel: "Resume HTML link or local path",
+        resumeHtmlPlaceholder: "For example: file:///C:/.../vickie_resume_profile.html or https://...",
+        jobTitleLabel: "Target role (optional)",
+        jobTitlePlaceholder: "For example: AI Agent Product Manager",
+        outputLanguageLabel: "Output language",
+        outputLanguageOptionZh: "Chinese",
+        outputLanguageOptionEn: "English",
+        outputLanguageOptionBi: "Bilingual",
+        rewriteStrengthLabel: "Rewrite intensity",
+        jdTextLabel: "JD text (preferred)",
+        jdTextPlaceholder: "Paste responsibilities, requirements, and keywords here",
+        jdImageLabel: "JD image (optional, OCR is used when text is empty)",
+        ocrHint: "Note: if you upload an image only, the backend will try OCR with OPENAI_API_KEY. If the key is missing, the app will show the failure reason.",
+        tipsTitle: "Recommended input flow:",
+        tipsLine1: "1. Paste the full JD text first for the most stable result.",
+        tipsLine2: "2. If you only want a quick trial, click the demo-fill button first.",
+        tipsLine3: "3. If the result feels conservative, the app is likely running in no-key fallback mode.",
+        generateBtn: "Generate tailored resume page",
+        fillDemoBtn: "Fill current demo example",
+        resultTitle: "Generated output",
+        footerNote: "Generated output is written to the server-side output folder and returned as a new page link plus summary JSON for further iteration.",
+        statusGenerating: "Generating, please wait...",
+        statusDone: "Done. You can open the new page to preview it.",
+        statusFillDemo: "Demo content inserted. You can generate immediately.",
+        fileUrlLabel: "Local file URL",
+        absPathLabel: "Absolute path",
+        relPathLabel: "Relative path",
+        summaryJsonLabel: "Summary JSON",
+        readImageError: "Failed to read image file",
+        genericError: "Generation failed",
+      }
+    };
+
+    function t(key) {
+      return translations[currentUiLang][key] || key;
+    }
+
+    function applyLanguage(lang) {
+      currentUiLang = lang;
+      document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
+      langZhBtn.classList.toggle("active", lang === "zh");
+      langEnBtn.classList.toggle("active", lang === "en");
+
+      const textIds = [
+        "eyebrowText", "heroTitle", "heroLead", "heroPoint1", "heroPoint2", "heroPoint3", "heroPoint4",
+        "stepsTitle", "step1", "step2", "step3", "scenarioTitle", "scenarioIntro", "card1Title", "card1Body",
+        "card2Title", "card2Body", "card3Title", "card3Body", "formTitle", "formIntro", "resumeHtmlLabel",
+        "jobTitleLabel", "outputLanguageLabel", "outputLanguageOptionZh", "outputLanguageOptionEn", "outputLanguageOptionBi",
+        "rewriteStrengthLabel", "jdTextLabel", "jdImageLabel", "ocrHint", "tipsTitle", "tipsLine1", "tipsLine2",
+        "tipsLine3", "generateBtn", "fillDemoBtn", "resultTitle", "footerNote"
+      ];
+
+      for (const id of textIds) {
+        const node = document.getElementById(id);
+        if (node) node.textContent = t(id);
+      }
+
+      document.getElementById("resumeHtmlUrl").placeholder = t("resumeHtmlPlaceholder");
+      document.getElementById("jobTitle").placeholder = t("jobTitlePlaceholder");
+      document.getElementById("jdText").placeholder = t("jdTextPlaceholder");
+    }
 
     function setStatus(text, isError = false) {
       statusEl.textContent = text || "";
@@ -301,7 +652,7 @@ INDEX_HTML = """<!doctype html>
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result || "");
-        reader.onerror = () => reject(new Error("读取图片失败"));
+        reader.onerror = () => reject(new Error(t("readImageError")));
         reader.readAsDataURL(file);
       });
     }
@@ -309,16 +660,16 @@ INDEX_HTML = """<!doctype html>
     function renderLinks(data) {
       const lines = [];
       if (data.output_html_file_url) {
-        lines.push(["本地文件 URL", data.output_html_file_url]);
+        lines.push([t("fileUrlLabel"), data.output_html_file_url]);
       }
       if (data.output_html_abs_path) {
-        lines.push(["文件路径", data.output_html_abs_path]);
+        lines.push([t("absPathLabel"), data.output_html_abs_path]);
       }
       if (data.output_html_rel_path) {
-        lines.push(["相对路径", data.output_html_rel_path]);
+        lines.push([t("relPathLabel"), data.output_html_rel_path]);
       }
       if (data.summary_json_path) {
-        lines.push(["摘要 JSON", data.summary_json_path]);
+        lines.push([t("summaryJsonLabel"), data.summary_json_path]);
       }
 
       for (const pair of lines) {
@@ -340,7 +691,7 @@ INDEX_HTML = """<!doctype html>
 
     generateBtn.addEventListener("click", async () => {
       clearResult();
-      setStatus("正在生成，请稍候...");
+      setStatus(t("statusGenerating"));
 
       try {
         const jdImageFile = document.getElementById("jdImage").files[0];
@@ -363,13 +714,13 @@ INDEX_HTML = """<!doctype html>
 
         const data = await res.json();
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || "生成失败");
+          throw new Error(data.error || t("genericError"));
         }
 
-        setStatus("生成完成。你可以直接打开新页面预览。", false);
+        setStatus(t("statusDone"), false);
         renderLinks(data);
       } catch (err) {
-        setStatus(err.message || "生成失败", true);
+        setStatus(err.message || t("genericError"), true);
       }
     });
 
@@ -381,8 +732,13 @@ INDEX_HTML = """<!doctype html>
       if (!document.getElementById("jdText").value.trim()) {
         document.getElementById("jdText").value = "负责 AI Agent 产品从需求定义到上线迭代的全流程，联动研发与业务团队，推动多场景落地并对结果指标负责。";
       }
-      setStatus("示例已填充，可直接点击生成。", false);
+      setStatus(t("statusFillDemo"), false);
     });
+
+    langZhBtn.addEventListener("click", () => applyLanguage("zh"));
+    langEnBtn.addEventListener("click", () => applyLanguage("en"));
+
+    applyLanguage("zh");
   </script>
 </body>
 </html>
