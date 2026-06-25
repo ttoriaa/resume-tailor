@@ -6,6 +6,7 @@ import base64
 import datetime as dt
 import io
 import json
+import mimetypes
 import os
 import re
 import tempfile
@@ -40,6 +41,7 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_ROOT = ROOT / "reports" / "resume_tailoring"
+GENERATED_PREFIX = "/generated/"
 
 INDEX_HTML = """<!doctype html>
 <html lang="zh-CN">
@@ -570,7 +572,9 @@ INDEX_HTML = """<!doctype html>
         statusGenerating: "正在生成，请稍候...",
         statusDone: "生成完成。你可以直接打开新页面预览。",
         statusFillDemo: "示例已填充，可直接点击生成。",
+        previewUrlLabel: "预览链接",
         fileUrlLabel: "本地文件 URL",
+        docxUrlLabel: "DOCX 文件",
         absPathLabel: "文件路径",
         relPathLabel: "相对路径",
         summaryJsonLabel: "摘要 JSON",
@@ -626,6 +630,7 @@ INDEX_HTML = """<!doctype html>
         statusGenerating: "Generating, please wait...",
         statusDone: "Done. You can open the new page to preview it.",
         statusFillDemo: "Demo content inserted. You can generate immediately.",
+        previewUrlLabel: "Preview URL",
         fileUrlLabel: "Local file URL",
         docxUrlLabel: "DOCX output",
         absPathLabel: "Absolute path",
@@ -691,8 +696,14 @@ INDEX_HTML = """<!doctype html>
       if (data.output_html_file_url) {
         lines.push([t("fileUrlLabel"), data.output_html_file_url]);
       }
+      if (data.output_html_url) {
+        lines.unshift([t("previewUrlLabel"), data.output_html_url]);
+      }
       if (data.output_docx_file_url) {
         lines.push([t("docxUrlLabel"), data.output_docx_file_url]);
+      }
+      if (data.output_docx_url) {
+        lines.push([t("docxUrlLabel"), data.output_docx_url]);
       }
       if (data.output_html_abs_path) {
         lines.push([t("absPathLabel"), data.output_html_abs_path]);
@@ -702,6 +713,9 @@ INDEX_HTML = """<!doctype html>
       }
       if (data.summary_json_path) {
         lines.push([t("summaryJsonLabel"), data.summary_json_path]);
+      }
+      if (data.summary_json_url) {
+        lines.push([t("summaryJsonLabel"), data.summary_json_url]);
       }
 
       for (const pair of lines) {
@@ -1076,6 +1090,26 @@ def _safe_name(value: str, fallback: str = "job") -> str:
     return text or fallback
 
 
+def _as_posix_relative(path: Path, base: Path) -> str:
+    return str(path.relative_to(base)).replace("\\", "/")
+
+
+def _artifact_public_url(path: Path) -> str:
+    return GENERATED_PREFIX + _as_posix_relative(path.resolve(), ROOT.resolve())
+
+
+def _resolve_public_artifact(subpath: str) -> Path:
+    candidate = (ROOT / subpath).resolve()
+    root_resolved = ROOT.resolve()
+    try:
+        candidate.relative_to(root_resolved)
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("Invalid generated file path") from exc
+    if not candidate.exists() or not candidate.is_file():
+        raise FileNotFoundError("Generated file not found")
+    return candidate
+
+
 def _build_summary_block(payload: dict[str, Any], job_title: str, version: str, jd_text: str, source_label: str) -> str:
     focus_items = payload.get("jd_focus", [])[:8]
     gap_items = payload.get("gaps", [])[:4]
@@ -1234,10 +1268,13 @@ def _run_tailor(
 
     return {
         "ok": True,
+        "output_html_url": _artifact_public_url(output_html_path),
         "output_html_abs_path": str(output_html_path.resolve()),
         "output_html_rel_path": str(output_html_path.relative_to(ROOT)).replace("\\", "/"),
         "output_html_file_url": output_html_path.resolve().as_uri(),
-      "output_docx_file_url": docx_output_url,
+        "output_docx_url": _artifact_public_url(output_docx_path) if docx_output_url else "",
+        "output_docx_file_url": docx_output_url,
+        "summary_json_url": _artifact_public_url(summary_path),
         "summary_json_path": str(summary_path.resolve().as_uri()),
         "provider": payload.get("meta", {}).get("provider", "unknown"),
         "resume_source_kind": resume_input["kind"],
@@ -1261,6 +1298,25 @@ class ResumeTailorHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
             return
 
+        if self.path.startswith(GENERATED_PREFIX):
+            try:
+                parsed = urlparse(self.path)
+                rel = unquote(parsed.path[len(GENERATED_PREFIX):]).lstrip("/")
+                artifact = _resolve_public_artifact(rel)
+                payload = artifact.read_bytes()
+                mime, _ = mimetypes.guess_type(str(artifact))
+                content_type = mime or "application/octet-stream"
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+            except FileNotFoundError:
+                _json_response(self, HTTPStatus.NOT_FOUND, {"ok": False, "error": "Generated file not found"})
+            except Exception as exc:  # noqa: BLE001
+                _json_response(self, HTTPStatus.BAD_REQUEST, {"ok": False, "error": str(exc)})
+            return
+
         _json_response(self, HTTPStatus.NOT_FOUND, {"ok": False, "error": "Not found"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -1272,11 +1328,11 @@ class ResumeTailorHandler(BaseHTTPRequestHandler):
             data = _read_json_body(self)
             result = _run_tailor(
                 resume_html_url=_clean(data.get("resume_html_url")),
-              resume_pdf_data_url=_clean(data.get("resume_pdf_data_url")),
-              resume_docx_data_url=_clean(data.get("resume_docx_data_url")),
+                resume_pdf_data_url=_clean(data.get("resume_pdf_data_url")),
+                resume_docx_data_url=_clean(data.get("resume_docx_data_url")),
                 jd_text=_clean(data.get("jd_text")),
                 jd_image_data_url=_clean(data.get("jd_image_data_url")),
-              jd_pdf_data_url=_clean(data.get("jd_pdf_data_url")),
+                jd_pdf_data_url=_clean(data.get("jd_pdf_data_url")),
                 job_title=_clean(data.get("job_title")),
                 language=_clean(data.get("language")) or "zh",
                 version=_clean(data.get("version")) or "aggressive",
